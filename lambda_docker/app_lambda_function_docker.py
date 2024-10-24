@@ -11,7 +11,7 @@ def handler(event, context):
     s3 = boto3.resource("s3")
 
     # Load the model from S3
-    lr_model = pickle.loads(
+    model = pickle.loads(
         s3.Bucket("bucketnamewheremodelives")
         .Object("binary_sklearn_model.pkl")
         .get()["Body"]
@@ -45,9 +45,7 @@ def handler(event, context):
     # Expects the body of the request to be a json object with the keys as the feature names
     # and the values as the feature values
     # Names from input form MUST MATCH the names in the when it was built
-    df = pd.DataFrame(
-        parsed_body, index=[0], columns=lr_model["scaler"].feature_names_in_
-    )
+    df = pd.DataFrame(parsed_body, index=[0], columns=model["scaler"].feature_names_in_)
 
     # If missing values in the input data, return an error
     if df.isna().values.any():
@@ -66,7 +64,7 @@ def handler(event, context):
             ),
         }
 
-    pred_proba = lr_model.predict_proba(df)
+    pred_proba = model.predict_proba(df)
 
     # Get the probability of a POSITIVE outcome, round to 3 decimal places
     proba = round(pred_proba[0, -1], 3)
